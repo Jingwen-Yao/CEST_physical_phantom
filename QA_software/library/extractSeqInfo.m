@@ -1,0 +1,136 @@
+function [SeqInfo] = extractSeqInfo(DicomFolder,seqType)
+
+switch seqType
+    case 't1map'
+        sequencefolders = dir([DicomFolder '/T1mapping']);
+        sequencefolders(~cellfun('isempty',strfind({sequencefolders.name},'.'))) = [];
+        sequencefolders(~cellfun('isempty',strfind({sequencefolders.name},'..'))) = [];
+    otherwise
+        sequencefolders = dir(DicomFolder);
+        sequencefolders(~cellfun('isempty',strfind({sequencefolders.name},'.'))) = [];
+        sequencefolders(~cellfun('isempty',strfind({sequencefolders.name},'..'))) = [];
+end
+
+switch seqType
+    case 't1'
+        sequencefolders(cellfun('isempty',strfind({sequencefolders.name},'t1')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'mprage')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'MPRAGE'))) = [];
+        nifti_file = [DicomFolder '/../NIFTI/t1.nii.gz'];
+        seq_name = 'T1w';
+    case 't2'
+        sequencefolders(cellfun('isempty',strfind({sequencefolders.name},'t2')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'tse'))) = [];
+        nifti_file = [DicomFolder '/../NIFTI/t2.nii.gz'];
+        seq_name = 'T2w';
+    case 't2map'
+        sequencefolders(cellfun('isempty',strfind({sequencefolders.name},'ME_SE')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'MSE')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'mse'))) = [];
+        nifti_file = [DicomFolder '/../NIFTI/MSE.nii.gz'];
+        seq_name = 'T2 Mapping';
+    case 't1map'
+        sequencefolders(cellfun('isempty',strfind({sequencefolders.name},'TI')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'ti'))) = [];
+        nifti_file = [DicomFolder '/../NIFTI/MTI.nii.gz'];
+        seq_name = 'T1 Mapping';
+    case 'cest'
+        sequencefolders(cellfun('isempty',strfind({sequencefolders.name},'cest')) ...
+            & cellfun('isempty',strfind({sequencefolders.name},'CEST'))) = [];
+        nifti_file = [DicomFolder '/../NIFTI/me_cest.nii.gz'];
+        seq_name = 'CEST';
+    otherwise
+        warning('Unidentified sequence type!');
+end
+
+switch seqType
+    case 't1map'
+        seqFolderPath = [DicomFolder '/T1mapping/' sequencefolders(1).name];
+    otherwise
+        seqFolderPath = [DicomFolder '/' sequencefolders(1).name];
+end
+
+dicomfile = dir(seqFolderPath);
+dicomfile(cellfun('isempty',strfind({dicomfile.name},'.dcm'))) = [];
+metadata = dicominfo([seqFolderPath '/' dicomfile(1).name], 'UseDictionaryVR', true);
+SeqInfo.SequenceName = metadata.SequenceName;
+SeqInfo.TR = metadata.RepetitionTime;
+SeqInfo.TE = metadata.EchoTime;
+try
+    SeqInfo.TI = metadata.InversionTime;
+catch
+    SeqInfo.TI = nan;
+end
+SeqInfo.FA = metadata.FlipAngle;
+SeqInfo.NEX = metadata.NumberOfAverages;
+SeqInfo.PixelBandwidth = metadata.PixelBandwidth;
+
+[~,nx] = system(['3dinfo -ni ' nifti_file]);
+[~,ny] = system(['3dinfo -nj ' nifti_file]);
+[~,nz] = system(['3dinfo -nk ' nifti_file]);
+[~,dx] = system(['3dinfo -adi ' nifti_file]);
+[~,dy] = system(['3dinfo -adj ' nifti_file]);
+[~,dz] = system(['3dinfo -adk ' nifti_file]);
+
+SeqInfo.MatrixSize = [str2double(nx) str2double(ny) str2double(nz)];
+SeqInfo.VoxelSize = [str2double(dx) str2double(dy) str2double(dz)];
+
+switch seqType
+    case 't2map'
+        fileID = fopen('../NIFTI/T2.txt','r');
+        formatSpec = '%f';
+        SeqInfo.TE = fscanf(fileID,formatSpec)';
+    case 't1map'
+        fileID = fopen('../NIFTI/T1.txt','r');
+        formatSpec = '%f';
+        SeqInfo.TI = fscanf(fileID,formatSpec)';
+    case 'cest'
+        SeqInfo.TE = [14.1 34.1 58.0 92.4];
+end
+
+NTE = length(SeqInfo.TE);
+NTI = length(SeqInfo.TI);
+
+SeqInfo.txt = ...
+    [{['\textbf{' seq_name ' Sequence}: \\']} ...
+    {['\textbf{ - Sequence Name}: ' SeqInfo.SequenceName ' \\']} ...
+    {['\textbf{ - Matrix Size}: ' num2str(SeqInfo.MatrixSize(1),'%d') ...
+    ' x ' num2str(SeqInfo.MatrixSize(2),'%d') ...
+    ' x ' num2str(SeqInfo.MatrixSize(3),'%d') ' \\']} ...
+    {['\textbf{ - Voxel Size}: ' num2str(SeqInfo.VoxelSize(1),'%.2f') ...
+    ' x ' num2str(SeqInfo.VoxelSize(2),'%.2f') ...
+    ' x ' num2str(SeqInfo.VoxelSize(3),'%.2f') ' mm \\']} ...
+    {['\textbf{ - Repetition Time}: ' num2str(SeqInfo.TR,'%d') ' ms \\']} ...
+    {['\textbf{ - Echo Time(s)}: ' num2str(SeqInfo.TE,' %.1f') ' ms \\']} ...
+    {['\textbf{ - Inversion Time(s)}: ' num2str(SeqInfo.TI,' %d') ' ms \\']} ...
+    {['\textbf{ - Flip Angle}: ' num2str(SeqInfo.FA,'%d') ' degree \\']} ...
+    {['\textbf{ - Number of Averages}: ' num2str(SeqInfo.NEX,'%d') ' \\']} ...
+    {['\textbf{ - Pixel Bandwidth}: ' num2str(SeqInfo.PixelBandwidth,'%d') ' Hz']} ...
+    ];
+SeqInfo.txt = cellfun(@(x) strrep(x,'_','-'), SeqInfo.txt, 'UniformOutput', false);
+
+% seqInfo_str = [seq_name ' Sequence: \n'...
+%     ' - Sequence Name: %s \n'...
+%     ' - Matrix Size: %d x %d x %d \n'...
+%     ' - Voxel Size: %.2f x %.2f x %.2f mm \n'...
+%     ' - Repetition Time: %d ms \n'...
+%     ' - Echo Time(s):' repmat(' %.1f',1,NTE) ' ms \n'...
+%     ' - Inversion Time(s):' repmat(' %d',1,NTI) ' ms \n'...
+%     ' - Flip Angle: %d degree \n'...
+%     ' - Number of Averages: %d \n'...
+%     ' - Pixel Bandwidth: %d Hz \n'];
+%
+% SeqInfo.txt = ...
+%     sprintf(seqInfo_str,...
+%     SeqInfo.SequenceName,...
+%     SeqInfo.MatrixSize,...
+%     SeqInfo.VoxelSize,...
+%     SeqInfo.TR,...
+%     SeqInfo.TE,...
+%     SeqInfo.TI,...
+%     SeqInfo.FA,...
+%     SeqInfo.NEX,...
+%     SeqInfo.PixelBandwidth);
+% SeqInfo.txt = strrep(SeqInfo.txt,'_','-');
+
+end

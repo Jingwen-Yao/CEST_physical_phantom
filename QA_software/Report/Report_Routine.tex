@@ -1,0 +1,186 @@
+% !TeX spellcheck = en_GB
+%__________________________________________________
+% Basic Template for the use in the UCLA Brain Tumor Imaging Laboratory
+%	purpose: any
+%__________________________________________________
+
+%Type of document
+\PassOptionsToPackage{svgnames}{xcolor}
+\documentclass[12pt, letterpaper]{article}
+
+% encoding for the document
+\usepackage[utf8]{inputenc}
+
+% include graphics
+\usepackage{graphicx}
+
+% foot note
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+% margin
+\usepackage[doublespacing]{setspace}
+\usepackage[margin=1.4cm]{geometry}
+
+% Times font
+\usepackage{mathptmx}
+
+% include logos on .eps format
+\usepackage{epstopdf}
+% for table formating
+\usepackage{array}
+% for symbols
+\usepackage{latexsym}
+% for boxes
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{skins,breakable}
+\usepackage{multicol}
+
+% use tables
+\usepackage[table]{colortbl}
+\usepackage{booktabs}
+\usepackage{hhline}
+
+% use symbols
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+%%-----------Costume---------
+\setlength{\parindent}{0in}
+
+%%-----------Background------
+\usepackage{eso-pic}
+\newcommand\BackgroundPic{%
+\put(0,0){%
+\parbox[b][\paperheight]{\paperwidth}{%
+\centering
+\includegraphics[width=\paperwidth,height=\paperheight]{background_noLogo.png}%
+}}}
+
+%%-----------Box------
+\tcbset{
+colback=white,
+colframe=black!15!white,
+coltitle=black,
+nobeforeafter,
+sharp corners=uphill,
+width=(\linewidth)}
+
+\pagestyle{empty}
+
+\begin{document}
+
+\AddToShipoutPicture{\BackgroundPic}
+
+%---------- Footnote---------------
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+
+%\lfoot{
+%\vspace*{-64pt}
+%\footnotesize\textit{UCLA Brain Tumor Imaging Laboratory \\
+%Center for Computer Vision and Imaging Biomarkers \\
+%Department of Radiology, David Geffen School of Medicine \\
+%924 Westwood Blvd., Suite 615 Los Angeles, CA 90024
+%}}
+
+\rfoot{
+\vspace*{-48pt}
+\footnotesize\textit{Page \thepage \hspace{1pt} of \pageref{LastPage}\\
+Report Date: \today}}
+
+%---------- TITLE ---------------
+\textbf{{\Large CEST Phantom \\ Quality Assurance Report}}
+\vspace*{16pt}
+
+%---------- Scanner information ---------------
+\begin{tcolorbox}
+[title = \textbf{Scanner Information},
+width=7cm,
+height=5cm,
+left skip=0cm]
+\footnotesize{\input{ScanInformation.txt}}
+\end{tcolorbox}
+\begin{tcolorbox}
+[title = \textbf{CEST Saturation Parameters},
+width=12cm,
+height=5cm,
+left skip=0.5cm]
+\footnotesize{
+\begin{multicols}{2}
+\textbf{Pulse Shape}: Gaussian \\
+\textbf{Pulse Length}: 100 ms \\
+\textbf{Pulse Flip Angle}: 3090 degree \\
+\textbf{Pulse Interval}: 5 ms \\
+\textbf{Pulse Number}: 3 \\
+
+\columnbreak
+\textbf{Offset Frequencies}: 0, $\pm$0.25, $\pm$0.5, $\pm$0.75. $\pm$1, $\pm$1.25, $\pm$1.5, $\pm$1.75, $\pm$2, $\pm$2.2, $\pm$2.4, $\pm$2.6, $\pm$2.8, $\pm$3, $\pm$3.2, $\pm$3.4, $\pm$3.6, $\pm$3.8, $\pm$4, $\pm$4.5, $\pm$5, $\pm$7, $\pm$10 ppm
+\end{multicols}
+}
+\end{tcolorbox}
+
+\vspace*{8pt}
+%---------- Summary results ---------------
+\begin{tcolorbox}
+[title = \textbf{CEST Measurements (mean $\pm$ SD)},
+width=8.5cm,
+height=13.75cm,
+left skip=0cm]
+\renewcommand{\arraystretch}{0.73}
+\footnotesize{                 
+\input{MeasurementTable_routine.txt}                  
+}
+\vspace*{-8pt}
+\singlespacing{
+\footnotesize{Note: Colored cell indicates deviation from ground truth values. Red means higher and blue means lower than the standard values. Cell with colored text indicates that the deviation is outside the 99\% confidence interval of the standard value.}}
+\end{tcolorbox}
+\begin{tcolorbox}
+[boxsep=0pt,boxrule=0pt,left=0mm,right=0mm,top=0mm,bottom=0mm,
+width=10.5cm, height=13.75cm, left skip=0.5cm]
+%---------- Registration checking ---------------
+\begin{tcolorbox}
+[title = \textbf{Registration to Template - $T_2w$},
+width=10cm,
+height=6.75cm,
+left skip=0cm,
+colback=white, colframe=black!15!white, coltitle=black, nobeforeafter, sharp corners=uphill]
+\centering
+\footnotesize{Middle slices of coronal view, saggital view, and axial view.}\\
+\includegraphics[width=6.7cm]{imgReg_mid.png}\\
+\vspace*{-8pt}
+\footnotesize{Slices across the three colored platforms.}\\
+\includegraphics[width=6.7cm]{imgReg_sli.png}\\
+\end{tcolorbox}
+
+%---------- relaxometry and CEST results ---------------
+\vspace*{8pt}
+\onehalfspacing{
+\begin{tcolorbox}
+[title =\textbf{CEST Measurement - $MTR_{asym}$ $at$ $3.0ppm$ $(\%)$},
+width=10cm,
+height=6.75cm,
+left skip=0cm,
+colback=white, colframe=black!15!white, coltitle=black, nobeforeafter, sharp corners=uphill]
+\includegraphics[height=5.3cm]{MTRasymplot.png}
+\hfill
+\includegraphics[height=5.3cm]{MTRasymmap_vert.png}
+\end{tcolorbox}
+}
+\end{tcolorbox}
+
+\vspace*{8pt}
+%---------- Quality Assurance ---------------
+\begin{tcolorbox}
+[title = \textbf{Report Summary},
+width=19.1cm,
+left skip=0cm]
+\vspace*{-16pt}
+\singlespacing{\footnotesize{\input{QA_routine.txt}}}
+\end{tcolorbox}
+
+%---------- end CONTENT ---------------
+
+\end{document}
+}
